@@ -16,7 +16,7 @@ $resourceGroupName = "$Env:RESOURCEGROUPNAME"
 $websiteName = "$Env:WEBSITENAME"
 $slotName = if ($env:SLOTNAME) { $env:SLOTNAME } else { "NoSlot" } 
 $WebAppApiVersion = "2018-02-01"
-# Example call: SetWebAppConfig MyResourceGroup MySite $ConfigObject
+
 Function SetWebAppConfig($ResourceGroupName, $websiteName, $slotName, $ConfigObject)
 {
     if($slotName -eq "NoSlot" )
