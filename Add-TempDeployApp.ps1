@@ -1,3 +1,9 @@
+## IMPORTANT
+## This script currently makes assumptions about the target app service.  Running this blindly may result in loss of virtual directory configuration
+## The assumption is that before running this script, there is a single virtual application "/" pointing to "site\wwwroot\docroot"
+## Always verify these scripts in a testing environment before using in a production capacity
+
+
 #Retrieve variables from environment and bail if not set
 
 if (-not $Env:RESOURCEGROUPNAME)
