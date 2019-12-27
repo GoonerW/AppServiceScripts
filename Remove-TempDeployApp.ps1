@@ -1,7 +1,4 @@
-## IMPORTANT
-## This script currently makes assumptions about the target app service.  Running this blindly may result in loss of virtual directory configuration
-## The assumption is that before running this script, there is a single virtual application "/" pointing to "site\wwwroot\docroot"
-## Always verify these scripts in a testing environment before using in a production capacity
+# Now uses Get-AzureRMWebApp(Slot) and Set-AzureRmWebApp(Slot) to remove Virtual Directory from existing configuration
 
 #Retrieve variables from environment and bail if not set
 
@@ -22,24 +19,27 @@ $websiteName = "$Env:WEBSITENAME"
 $slotName = if ($env:SLOTNAME) { $env:SLOTNAME } else { "NoSlot" } 
 $WebAppApiVersion = "2018-02-01"
 
-Function SetWebAppConfig($ResourceGroupName, $websiteName, $slotName, $ConfigObject)
-{
-    if($slotName -eq "NoSlot" )
-    {
-        write-Host "Configuring root web app"
-        Set-AzureRmResource -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/Config -Name $websiteName/web -PropertyObject $ConfigObject -ApiVersion $WebAppApiVersion -Force
-    }
-    else
-    {
-        write-Host "Configuring deployment slot: $slotName"
-        Set-AzureRmResource -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/slots/Config -Name $websiteName/$slotName/web -PropertyObject $ConfigObject -ApiVersion $WebAppApiVersion -Force
-    }    
-}
+Write-Host "Remove a virtual application"
 
-Write-Host "Set a virtual application"
-$props=@{
-    virtualApplications = @(
-        @{ virtualPath = "/"; physicalPath = "site\wwwroot\docroot" }
-    )
+# Retrieve Web App
+$website = Get-AzureRmWebApp -Name $env:WEBSITENAME -ResourceGroupName $env:RESOURCEGROUPNAME
+
+
+if($slotName -eq "NoSlot" )
+{
+    write-Host "Configuring root web app"
+    
+    $TempApp = $website.SiteConfig.VirtualApplications |? {$_.VirtualPath -eq "/tempdeploy"}
+    $null = $website.SiteConfig.VirtualApplications.Remove($TempApp);
+    $website | Set-AzureRmWebApp
+    
 }
-SetWebAppConfig $ResourceGroupName $websiteName $slotName $props
+else
+{
+    write-Host "Configuring deployment slot: $slotName"
+    #Retrieve slot from main web app
+    $slotsite = Get-AzureRmWebAppSlot -WebApp $website -Slot $slotName
+    $TempApp = $slotsite.SiteConfig.VirtualApplications |? {$_.VirtualPath -eq "/tempdeploy"}
+    $null = $slotsite.SiteConfig.VirtualApplications.Remove($TempApp)
+    $slotsite | Set-AzureRmWebAppSlot
+}    
